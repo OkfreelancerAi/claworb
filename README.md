@@ -60,7 +60,7 @@ Open http://localhost:3000.
 
 Review `src/lib/config.ts` before deployment. Confirm recipient addresses, chain, token contract, and price units against the intended environment. Do not treat configured addresses or prices as evidence of ownership, a live balance, or a successful payment.
 
-The paid provider requires environment configuration including `X402_FACILITATOR_URL`, `BASE_RPC_URL`, and `DATABASE_URL`. Check the implementation and deployment environment for the complete requirements before enabling paid traffic. Never put private keys, entity secrets, API tokens, or production credentials in the repository.
+The paid provider requires `X402_PAY_TO`, `X402_FACILITATOR_URL`, `BASE_RPC_URL`, and `DATABASE_URL`. `X402_PAY_TO` must be the recipient address you have independently verified. Paid routes fail closed if any required value is absent or invalid. Configure secrets in the deployment environment, never in Git. A configured environment is not proof of a successful live payment. See `.env.example` for variable names.
 
 ## What the paid capabilities do—and do not do
 

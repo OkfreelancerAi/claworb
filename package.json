@@ -6,21 +6,27 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "compile:contracts": "hardhat compile",
+    "deploy:ownership": "hardhat run scripts/deploy-ownership-attestation.js",
+    "test:contracts": "hardhat test",
+    "node:hardhat": "hardhat node"
   },
   "dependencies": {
     "next": "^14.2.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "viem": "^2.21.0",
-    "pg": "^8.13.0"
+    "pg": "^8.13.0",
+    "dotenv": "^16.4.5"
   },
   "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/pg": "^8.11.0",
-    "typescript": "^5",
+    "hardhat": "^2.22.0",
     "tailwindcss": "^3.4.0",
     "postcss": "^8",
     "autoprefixer": "^10"

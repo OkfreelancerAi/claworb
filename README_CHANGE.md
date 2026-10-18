@@ -1,0 +1,1 @@
+chore: add Futuristic agentic dashboard page (server component)

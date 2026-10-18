@@ -1,7 +1,7 @@
 /**
- * ClawOrb Settlement Indexer
- * Uses real Postgres when DATABASE_URL is set (Supabase, Neon, Vercel Postgres, etc.).
- * Falls back to in-memory store for local/dev.
+ * ClawOrb Settlement Indexer.
+ * Paid routes require DATABASE_URL and durable Postgres storage; memory fallback
+ * remains available only for non-paid local analytics.
  */
 
 export interface SettlementEvent {
@@ -14,149 +14,105 @@ export interface SettlementEvent {
   skillId?: string;
   timestamp: string;
   payTo: string;
+  asset?: string;
+  payer?: string;
 }
 
 const memoryStore: SettlementEvent[] = [];
 
-function hasDatabase() {
-  return Boolean(process.env.DATABASE_URL);
-}
+function hasDatabase() { return Boolean(process.env.DATABASE_URL); }
 
 async function getPg() {
-  // Dynamic import so the package is only required when DATABASE_URL is present
   const { default: pg } = await import("pg");
-  const pool = new pg.Pool({
+  return new pg.Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: process.env.DATABASE_SSL === "false" ? false : { rejectUnauthorized: false },
   });
-  return pool;
 }
 
 export async function ensureSchema() {
-  if (!hasDatabase()) return;
-
+  if (!hasDatabase()) throw new Error("DATABASE_URL is required for durable settlement storage");
   const pool = await getPg();
   try {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS settlements (
-        id UUID PRIMARY KEY,
-        tx_hash TEXT NOT NULL,
-        amount NUMERIC(18,6) NOT NULL,
-        chain TEXT NOT NULL,
-        resource TEXT NOT NULL,
-        invite TEXT,
-        skill_id TEXT,
-        pay_to TEXT NOT NULL,
-        created_at TIMESTAMPTZ DEFAULT NOW()
+        id UUID PRIMARY KEY, tx_hash TEXT NOT NULL, amount NUMERIC(18,6) NOT NULL,
+        chain TEXT NOT NULL, resource TEXT NOT NULL, invite TEXT, skill_id TEXT,
+        pay_to TEXT NOT NULL, asset TEXT, payer TEXT, created_at TIMESTAMPTZ DEFAULT NOW()
       );
+      ALTER TABLE settlements ADD COLUMN IF NOT EXISTS asset TEXT;
+      ALTER TABLE settlements ADD COLUMN IF NOT EXISTS payer TEXT;
       CREATE INDEX IF NOT EXISTS idx_settlements_created ON settlements(created_at DESC);
-      CREATE INDEX IF NOT EXISTS idx_settlements_tx ON settlements(tx_hash);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_settlements_unique_payment ON settlements(chain, tx_hash);
     `);
-  } finally {
-    await pool.end();
-  }
+  } finally { await pool.end(); }
 }
 
-export async function recordSettlement(
-  event: Omit<SettlementEvent, "id" | "timestamp">
-): Promise<SettlementEvent> {
+export async function recordSettlement(event: Omit<SettlementEvent, "id" | "timestamp">): Promise<SettlementEvent> {
+  if (!hasDatabase()) throw new Error("Durable settlement storage is not configured");
+  await ensureSchema();
   const id = crypto.randomUUID();
   const timestamp = new Date().toISOString();
-  const full: SettlementEvent = { ...event, id, timestamp };
-
-  if (!hasDatabase()) {
-    memoryStore.unshift(full);
-    if (memoryStore.length > 500) memoryStore.length = 500;
-    return full;
-  }
-
   const pool = await getPg();
   try {
-    await pool.query(
+    const inserted = await pool.query(
       `INSERT INTO settlements
-        (id, tx_hash, amount, chain, resource, invite, skill_id, pay_to, created_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-      [
-        id,
-        event.txHash,
-        event.amount,
-        event.chain,
-        event.resource,
-        event.invite || null,
-        event.skillId || null,
-        event.payTo,
-        timestamp,
-      ]
+        (id, tx_hash, amount, chain, resource, invite, skill_id, pay_to, asset, payer, created_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+       ON CONFLICT (chain, tx_hash) DO NOTHING
+       RETURNING id, tx_hash as "txHash", amount::float8 as amount, chain, resource, invite,
+                 skill_id as "skillId", pay_to as "payTo", asset, payer, created_at as timestamp`,
+      [id, event.txHash, event.amount, event.chain, event.resource, event.invite || null,
+       event.skillId || null, event.payTo, event.asset || null, event.payer || null, timestamp]
     );
-    return full;
-  } finally {
-    await pool.end();
-  }
+    if (inserted.rows[0]) return { ...inserted.rows[0], timestamp: new Date(inserted.rows[0].timestamp).toISOString() };
+
+    const existing = await pool.query(
+      `SELECT id, tx_hash as "txHash", amount::float8 as amount, chain, resource, invite,
+              skill_id as "skillId", pay_to as "payTo", asset, payer, created_at as timestamp
+       FROM settlements WHERE chain = $1 AND tx_hash = $2 LIMIT 1`,
+      [event.chain, event.txHash]
+    );
+    const row = existing.rows[0];
+    if (!row) throw new Error("Duplicate settlement could not be reconciled");
+    // A duplicate tx is idempotent only for the same payment terms and resource.
+    if (row.resource !== event.resource || Number(row.amount) !== event.amount ||
+        String(row.payTo).toLowerCase() !== event.payTo.toLowerCase() ||
+        String(row.asset || "").toLowerCase() !== String(event.asset || "").toLowerCase() ||
+        (row.payer && event.payer && String(row.payer).toLowerCase() !== event.payer.toLowerCase())) {
+      throw new Error("Settlement transaction replayed with mismatched payment terms");
+    }
+    return { ...row, timestamp: new Date(row.timestamp).toISOString() };
+  } finally { await pool.end(); }
 }
 
 export async function listSettlements(limit = 50): Promise<SettlementEvent[]> {
-  if (!hasDatabase()) {
-    return memoryStore.slice(0, limit);
-  }
-
+  if (!hasDatabase()) return memoryStore.slice(0, limit);
   const pool = await getPg();
   try {
     const { rows } = await pool.query(
-      `SELECT id, tx_hash as "txHash", amount::float8 as amount, chain,
-              resource, invite, skill_id as "skillId", pay_to as "payTo",
-              created_at as timestamp
-       FROM settlements
-       ORDER BY created_at DESC
-       LIMIT $1`,
-      [limit]
+      `SELECT id, tx_hash as "txHash", amount::float8 as amount, chain, resource, invite,
+              skill_id as "skillId", pay_to as "payTo", asset, payer, created_at as timestamp
+       FROM settlements ORDER BY created_at DESC LIMIT $1`, [limit]
     );
-    return rows.map((r: any) => ({
-      ...r,
-      timestamp: new Date(r.timestamp).toISOString(),
-    }));
-  } finally {
-    await pool.end();
-  }
+    return rows.map((row: any) => ({ ...row, timestamp: new Date(row.timestamp).toISOString() }));
+  } finally { await pool.end(); }
 }
 
 export async function getStats() {
   if (!hasDatabase()) {
-    const total = memoryStore.reduce((sum, e) => sum + e.amount, 0);
-    return {
-      count: memoryStore.length,
-      totalUsdc: total,
-      last: memoryStore[0] || null,
-      backend: "memory",
-    };
+    const total = memoryStore.reduce((sum, event) => sum + event.amount, 0);
+    return { count: memoryStore.length, totalUsdc: total, last: memoryStore[0] || null, backend: "memory", durable: false };
   }
-
   const pool = await getPg();
   try {
-    const { rows } = await pool.query(`
-      SELECT COUNT(*)::int as count,
-             COALESCE(SUM(amount),0)::float8 as "totalUsdc"
-      FROM settlements
-    `);
+    const { rows } = await pool.query(`SELECT COUNT(*)::int as count, COALESCE(SUM(amount),0)::float8 as "totalUsdc" FROM settlements`);
     const lastRows = await pool.query(
-      `SELECT id, tx_hash as "txHash", amount::float8 as amount, chain,
-              resource, invite, skill_id as "skillId", pay_to as "payTo",
-              created_at as timestamp
+      `SELECT id, tx_hash as "txHash", amount::float8 as amount, chain, resource, invite,
+              skill_id as "skillId", pay_to as "payTo", asset, payer, created_at as timestamp
        FROM settlements ORDER BY created_at DESC LIMIT 1`
     );
-    const last = lastRows.rows[0]
-      ? {
-          ...lastRows.rows[0],
-          timestamp: new Date(lastRows.rows[0].timestamp).toISOString(),
-        }
-      : null;
-
-    return {
-      count: rows[0].count,
-      totalUsdc: rows[0].totalUsdc,
-      last,
-      backend: "postgres",
-    };
-  } finally {
-    await pool.end();
-  }
+    const last = lastRows.rows[0] ? { ...lastRows.rows[0], timestamp: new Date(lastRows.rows[0].timestamp).toISOString() } : null;
+    return { count: rows[0].count, totalUsdc: rows[0].totalUsdc, last, backend: "postgres", durable: true };
+  } finally { await pool.end(); }
 }

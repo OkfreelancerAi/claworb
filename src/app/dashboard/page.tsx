@@ -17,6 +17,10 @@ export default async function DashboardPage() {
   const stats = health || { settlements: null };
   const launchInfo = launch || { ok: false, missingEnv: [] };
 
+  const ownerBase = launchInfo?.ownerLock?.base ?? null;
+  const payTo = launchInfo?.checks?.payTo?.value ?? null;
+  const payToMatches = launchInfo?.checks?.payTo?.matchesOwnerLock;
+
   return (
     <main className="min-h-screen p-8 bg-gradient-to-b from-slate-900 via-neutral-900 to-black text-sky-200">
       <div className="max-w-6xl mx-auto">
@@ -44,6 +48,19 @@ export default async function DashboardPage() {
             <h2 className="text-sm text-sky-300 uppercase font-semibold">Launch</h2>
             <p className="mt-2 text-2xl">{launchInfo?.ok ? "Ready" : "Not ready"}</p>
             <p className="mt-1 text-sm text-slate-400">missing: {(launchInfo?.missingEnv || launchInfo?.missingEnv)?.length ? (launchInfo.missingEnv || []).join(", ") : "none"}</p>
+            <p className="mt-2 text-sm text-slate-400">Base mainnet: {String(launchInfo?.checks?.baseRpc?.isBaseMainnet ?? false)}</p>
+          </div>
+        </section>
+
+        <section className="mb-6">
+          <h3 className="text-xl font-semibold mb-3">Ownership & Payments</h3>
+          <div className="p-4 rounded bg-slate-800/30">
+            <div className="text-sm text-sky-300">Owner (locked) base address</div>
+            <div className="text-lg mt-1 break-words">{ownerBase ?? '—'}</div>
+            <div className="text-sm text-slate-400 mt-2">Configured pay-to: {payTo ?? '—'}</div>
+            <div className={`mt-2 text-sm font-semibold ${payToMatches ? 'text-emerald-400' : 'text-rose-400'}`}>
+              {payToMatches ? 'Pay recipient matches owner lock (locked launch)' : 'Pay recipient does NOT match owner lock — REVIEW before mainnet launch'}
+            </div>
           </div>
         </section>
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { missingEnvs } from "@/lib/ensureConfig";
+import { OWNER_LOCK } from "@/lib/config";
 
 export async function GET() {
   const missing = missingEnvs();
@@ -8,12 +9,27 @@ export async function GET() {
     requiredEnvPresent: missing.length === 0,
     missingEnv: missing,
     timestamp: new Date().toISOString(),
+    ownerLock: OWNER_LOCK,
     checks: {
       database: { configured: false, ok: null, error: null },
-      baseRpc: { configured: false, ok: null, error: null },
-      facilitator: { configured: false, ok: null, error: null },
+      baseRpc: { configured: false, ok: null, error: null, chainId: null },
+      facilitator: { configured: false, ok: null, error: null, status: null },
+      payTo: { configured: false, matchesOwnerLock: null, value: process.env.X402_PAY_TO || null },
     },
   };
+
+  // payTo check
+  if (process.env.X402_PAY_TO) {
+    result.checks.payTo.configured = true;
+    try {
+      const normalized = String(process.env.X402_PAY_TO).trim().toLowerCase();
+      const ownerBase = String(OWNER_LOCK.base).toLowerCase();
+      result.checks.payTo.matchesOwnerLock = normalized === ownerBase;
+    } catch (err: any) {
+      result.checks.payTo.matchesOwnerLock = null;
+      result.checks.payTo.error = String(err.message || err);
+    }
+  }
 
   // DB check
   if (process.env.DATABASE_URL) {
@@ -41,9 +57,10 @@ export async function GET() {
       });
       const data = await resp.json();
       const chainId = data?.result;
-      // expected Base chainId for mainnet: 0x2105
+      // expected Base chainId for mainnet: 0x2105 (decimal 8453)
       result.checks.baseRpc.ok = !!chainId;
-      result.checks.baseRpc.chainId = chainId;
+      result.checks.baseRpc.chainId = chainId || null;
+      result.checks.baseRpc.isBaseMainnet = chainId === '0x2105' || chainId === 8453 || chainId === '8453';
     } catch (err: any) {
       result.checks.baseRpc.ok = false;
       result.checks.baseRpc.error = String(err.message || err);

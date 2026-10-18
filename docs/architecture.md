@@ -1,66 +1,63 @@
 # ClawOrb Architecture
 
-## 1. Goals
+## Product direction
 
-- Combine Genius Claw (mobile launch + ownership lock + Circle USDC), x402 (frictionless payments), and QUANTORB (multi-agent pipeline + skill board).
-- Make every value movement trackable and attributable to locked owner wallets.
-- Keep the system deployable on Vercel with clear separation of concerns.
+ClawOrb is an evidence-first research and claim-verification service for autonomous agents. The differentiator is not simply generating a confident answer: it is linking claims to sources, exposing uncertainty, checking dates and figures, and refusing to invent evidence.
 
-## 2. Layers
+## Current boundaries
 
-### 2.1 Presentation
-- Next.js App Router, mobile-first.
-- Launch interface, public skill board, invite links, live earnings dashboard.
+- **Web app:** Next.js App Router, mobile-oriented landing page.
+- **Paid endpoint:** `/api/earn` returns a payment requirement when no proof is supplied. If a payment header is present, the current provider guard fails closed because complete protocol verification and settlement are not implemented.
+- **Health endpoint:** `/api/health` reports app and indexer status.
+- **Settlement index:** optional Postgres implementation with an in-memory fallback. The current store does not yet provide sufficient durable idempotency/replay protection for production revenue accounting.
+- **Payments:** Base USDC is the current target configuration. No live payment, confirmed settlement, or production readiness is claimed.
 
-### 2.2 Payment (x402)
-- Any valuable endpoint can return HTTP 402 with dual-chain (Base + Solana) USDC requirements.
-- Client pays → proof in header → server verifies → data returned.
-- Funds settle directly to configured creator wallets.
+## Intended research result contract
 
-### 2.3 Agent Pipeline
-Inspired by QUANTORB:
+A future research response should make evidence inspectable. A recommended result shape:
 
-1. **SCOUT** – discovery of launches / opportunities / data
-2. **CARTOGRAPHER** – relationship and graph mapping
-3. **JUDGE** – quality / edge evaluation
-4. **QUANT** – pricing, cost, and execution parameters
-5. **GUARD** – risk, concentration, safety checks
-6. **EXECUTOR** – final action or model of action
+- `question`: original user question
+- `summary`: concise answer
+- `claims[]`: claim text, status (`supported`, `contradicted`, `uncertain`, `unverified`), source references, and explanation
+- `sources[]`: canonical URL, title, publisher, publication date when available, retrieval time, and relevant excerpt
+- `limitations[]`: missing sources, conflicts, stale data, and assumptions
 
-Sub-agents can be attached for specialized skills (payments, treasury, research, etc.).
+A source link alone is not proof that every statement is supported. Claims must be checked against the source content, and unknowns must remain unknown.
 
-### 2.4 Settlement & Tracking
-- Locked wallet list + split ratios in config (and optionally on-chain).
-- Payment proofs and on-chain transfer events are indexed.
-- Optional SQL store for fast dashboard queries (payment hash, amount, chain, skill, timestamp, invite source).
-- Dashboard shows only real balances and history.
+## Target x402 request flow
 
-### 2.5 Ownership Lock
-- Critical parameters (wallets, splits, admin) are intended to be immutable or multi-sig after launch.
-- Public attribution permanently references @okfreelancer.
-- Future: on-chain attestation / ownership NFT on Base as a permanent claim.
+1. Client requests a paid resource.
+2. Server returns a canonical HTTP 402 challenge for one explicitly selected x402 version.
+3. Client supplies the matching payment payload in the protocol's canonical header.
+4. Server validates schema and binds the payment to the requested resource, network, token, amount, and recipient.
+5. Server calls the compatible facilitator `/verify` with the exact payload and requirements.
+6. Server calls `/settle` following the selected version's protocol flow.
+7. Server requires successful settlement plus a valid transaction hash and confirms the expected chain/token/recipient as required by the provider contract.
+8. Only then does the service fulfill the request and persist an idempotent settlement record.
+9. A reconciliation process checks stored records against on-chain transactions.
 
-## 3. Data Flow (Paid Skill Call)
+**The current code does not complete this flow.** Do not enable paid fulfillment until it does. Do not mix v1 challenge fields with v2 headers or payload schemas.
 
-1. Client / agent requests a skill or research endpoint.
-2. Server responds 402 + payment requirements.
-3. Client signs and submits payment proof.
-4. Server verifies proof (facilitator or local).
-5. Business logic (agent pipeline or direct response) executes.
-6. Result returned; payment already settled to locked wallets.
-7. Event written to tracker / SQL for the dashboard.
+## Security requirements
 
-## 4. Security & Trust Notes
+- Fail closed if facilitator configuration is absent, malformed, or unavailable.
+- Never infer payment from the presence of a header.
+- Reject wrong network, token, recipient, amount, resource, malformed payloads, expired/reused authorizations, and failed settlement.
+- Use a durable uniqueness constraint/idempotency key for settlement records and protect against concurrent replay.
+- Keep secrets server-side and out of Git history, logs, client bundles, and API responses.
+- Validate all public endpoint inputs and use bounded timeouts.
+- Keep demo/in-memory activity separate from confirmed on-chain revenue.
+- Minimize health endpoint disclosures; never expose secrets or unnecessary wallet metadata.
 
-- Never expose private keys in the frontend or public repo.
-- Use environment variables or secure secret management for any signing authority.
-- Prefer facilitator services for production x402 settlement verification.
-- Treat the current scaffold as research + production-ready structure; mainnet capital movement requires audited programs and final wallet confirmation.
+## Quality gates
 
-## 5. Next Implementation Steps
+Before a release can be described as payment-capable:
 
-1. Implement `src/lib/x402.ts` and protected API routes.
-2. Add minimal agent interfaces under `src/lib/agents/`.
-3. Wire a simple SQL or file-based event log.
-4. Deploy to Vercel and point real wallets.
-5. (Optional) Deploy a minimal ownership attestation contract on Base.
+- TypeScript and production build pass in CI.
+- Unit and adversarial tests cover payment challenge parsing, verification, settlement, and replay handling.
+- A funded testnet payment succeeds end-to-end and the transaction is independently inspectable.
+- Rejected-payment tests prove no fulfillment and no earnings record is created.
+- Persistent storage, monitoring, rate limits, operational recovery, and reconciliation are configured.
+- Deployment and runtime checks pass; the deployed revision is identified.
+
+A passing build is necessary, not sufficient, evidence of payment correctness.

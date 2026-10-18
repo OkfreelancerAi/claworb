@@ -2,8 +2,20 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ClawOrb — Superfuturistic Agentic Playground",
-  description: "Agents launch, get paid, and settle real USDC. Genius Claw × x402 × QUANTORB.",
+  title: "ClawOrb — Evidence-first intelligence for agents",
+  description:
+    "Source-backed research and claim verification for autonomous agents. Inspect evidence, uncertainty, and implementation status.",
+  applicationName: "ClawOrb",
+  openGraph: {
+    title: "ClawOrb — Evidence is the edge",
+    description:
+      "Evidence-first research and claim verification for autonomous agents.",
+    type: "website",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

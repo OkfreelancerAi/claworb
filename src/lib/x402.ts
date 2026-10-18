@@ -91,9 +91,9 @@ async function verifyOnChainTransfer(
           topics: log.topics,
         });
         return decoded.eventName === "Transfer" &&
-          decoded.args.to.toLowerCase() === expectedRecipient &&
+          decoded.args.to.toLowerCase() === expectedRecipientLower &&
           decoded.args.value === expectedValue &&
-          (!expectedSender || decoded.args.from.toLowerCase() === expectedSender);
+          decoded.args.from.toLowerCase() === expectedSender;
       } catch {
         return false;
       }
@@ -192,7 +192,8 @@ export function withPaidAgentService(
     const onChainMatch = await verifyOnChainTransfer(
       settlement.transaction,
       price,
-      settlement.payer
+      settlement.payer,
+      payTo
     );
     if (!onChainMatch) {
       return NextResponse.json({

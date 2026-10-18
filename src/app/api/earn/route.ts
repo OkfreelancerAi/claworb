@@ -1,40 +1,35 @@
-import { requirePayment } from "@/lib/x402";
-import { recordSettlement } from "@/lib/indexer";
-import { OWNER_LOCK } from "@/lib/config";
+import { NextRequest, NextResponse } from "next/server";
+import { PRICES_USDC } from "@/lib/config";
+import { withPaidAgentService } from "@/lib/x402";
 
-export async function GET(request: Request) {
-  const result = await requirePayment(request.headers, "earn");
-
-  if (!result.paid) return result.response;
-
-  // Never record a settlement without a real transaction hash from the
-  // facilitator and a successful on-chain settlement result.
-  if (!result.txHash || !/^0x[0-9a-fA-F]{64}$/.test(result.txHash)) {
-    return Response.json({
-      error: "Settlement not confirmed",
-      code: "X402_SETTLEMENT_UNCONFIRMED",
-    }, { status: 503, headers: { "Cache-Control": "no-store" } });
-  }
-
-  await recordSettlement({
-    txHash: result.txHash,
-    amount: result.amount,
-    chain: "base",
-    resource: "earn",
-    payTo: OWNER_LOCK.base,
-  });
-
-  return Response.json({
+const handler = async (_request: NextRequest) => {
+  return NextResponse.json({
     ok: true,
-    message: "ClawOrb earn skill executed",
-    insight: "Agent pipeline placeholder — SCOUT → EXECUTOR would run here",
-    txHash: result.txHash,
-    amountUsdc: result.amount,
-    chain: "base",
+    service: "claworb-agent-execution",
+    result: {
+      status: "capability_ready",
+      supportedCapabilities: [
+        "evidence-pack-quality-check",
+        "agent-opportunity-triage",
+        "structured-task-specification",
+      ],
+      note: "This endpoint confirms service execution only; it does not claim third-party research, wallet analysis, or revenue that was not performed.",
+    },
     timestamp: new Date().toISOString(),
   });
+};
+
+const paidHandler = withPaidAgentService(
+  PRICES_USDC.earn,
+  "earn",
+  "ClawOrb agent capability execution",
+  handler
+);
+
+export async function GET(request: NextRequest) {
+  return paidHandler(request);
 }
 
-export async function POST(request: Request) {
-  return GET(request);
+export async function POST(request: NextRequest) {
+  return paidHandler(request);
 }

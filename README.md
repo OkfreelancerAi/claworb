@@ -10,7 +10,7 @@ Genius Claw × x402 × QUANTORB
 Mobile-first · Multi-agent · Zero-friction USDC · Locked ownership
 
 **Creator attribution: [@okfreelancer](https://x.com/okfreelancer)**  
-**Owner-lock model: intended design, not a live mainnet lock until deployed and verified**
+**Owner-wallets locked in as the configured controller addresses (see below)**
 
 </div>
 
@@ -60,10 +60,16 @@ Before any testnet or mainnet use, populate `.env` with the final wallet address
 
 ## Ownership and wallet configuration
 
-This repository contains the intended ownership-lock model and a future attestation direction, but it is not a live mainnet enforcement layer by itself.
+The repository uses the following controller addresses for owner attribution and operational splits. These addresses are recorded in the repository as the configured controller wallets:
+
+| Role | Network | Address |
+|------|---------|---------|
+| Owner (Base) | Base (EVM) | `0x34AcF08d68D85644bf322B7167151F8422f1BafC` |
+| Owner (Solana) | Solana | `2jAMeJZH1UeNSgdzdhHgYwAm6286aRqxMCdx52DBw7xo` |
+
+These addresses are the designated controller addresses for the repo configuration. "Locked in" in documentation means they are the canonical addresses used by default in config files and docs; it does not by itself create an on-chain immutable lock. For on-chain immutability and multisig enforcement, deploy the attestation/contracts and configure multisig ownership as described in the docs.
 
 - **Owner attribution:** creator attribution remains tied to [@okfreelancer](https://x.com/okfreelancer)
-- **Wallet addresses:** any wallet addresses shown in config or docs are placeholders until replaced with final controlled addresses, multisig wallets, or deployed governance contracts
 - **Live enforcement:** real ownership lock, immutable splits, and on-chain attestations require deployment, review, and secure key management
 
 The system is designed to support:

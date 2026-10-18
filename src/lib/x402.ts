@@ -2,9 +2,9 @@ import { HTTPFacilitatorClient } from "@x402/core/server";
 import { ExactEvmScheme } from "@x402/evm/exact/server";
 import { x402ResourceServer, withX402 } from "@x402/next";
 import { NextRequest, NextResponse } from "next/server";
-import { createPublicClient, decodeEventLog, http, parseAbiItem } from "viem";
+import { createPublicClient, decodeEventLog, http, isAddress, parseAbiItem } from "viem";
 import { base } from "viem/chains";
-import { PRICES_USDC, OWNER_LOCK } from "./config";
+import { PRICES_USDC } from "./config";
 import { recordSettlement } from "./indexer";
 
 export const BASE_NETWORK = "eip155:8453";
@@ -12,6 +12,12 @@ export const BASE_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const TRANSFER_EVENT = parseAbiItem("event Transfer(address indexed from, address indexed to, uint256 value)");
 
 type PaidServiceHandler = (request: NextRequest) => Promise<NextResponse>;
+
+function configuredPayTo(): `0x${string}` | null {
+  const value = process.env.X402_PAY_TO?.trim();
+  if (!value || !isAddress(value)) return null;
+  return value as `0x${string}`;
+}
 
 function facilitatorUrl(): string | null {
   const raw = process.env.X402_FACILITATOR_URL;
@@ -59,7 +65,8 @@ function isSettlementResponse(value: unknown): value is {
 async function verifyOnChainTransfer(
   txHash: string,
   priceUsdc: number,
-  expectedPayer?: string
+  expectedPayer: string,
+  expectedRecipient: string
 ): Promise<boolean> {
   const rpcUrl = process.env.BASE_RPC_URL;
   if (!rpcUrl) return false;
@@ -72,8 +79,8 @@ async function verifyOnChainTransfer(
     if (receipt.status !== "success") return false;
 
     const expectedValue = BigInt(Math.round(priceUsdc * 1_000_000));
-    const expectedRecipient = OWNER_LOCK.base.toLowerCase();
-    const expectedSender = expectedPayer?.toLowerCase();
+    const expectedRecipientLower = expectedRecipient.toLowerCase();
+    const expectedSender = expectedPayer.toLowerCase();
 
     return receipt.logs.some((log) => {
       if (log.address.toLowerCase() !== BASE_USDC.toLowerCase()) return false;
@@ -109,6 +116,13 @@ export function withPaidAgentService(
   handler: PaidServiceHandler
 ): (request: NextRequest) => Promise<Response> {
   return async (request: NextRequest): Promise<Response> => {
+    const payTo = configuredPayTo();
+    if (!payTo) {
+      return NextResponse.json({
+        error: "A valid X402_PAY_TO recipient address must be configured before paid fulfillment",
+        code: "X402_RECIPIENT_NOT_CONFIGURED",
+      }, { status: 503, headers: { "Cache-Control": "no-store" } });
+    }
     if (!process.env.DATABASE_URL) {
       return NextResponse.json({
         error: "Durable settlement storage is required before paid fulfillment",
@@ -139,7 +153,7 @@ export function withPaidAgentService(
           scheme: "exact",
           price: `$${price.toFixed(2)}`,
           network: BASE_NETWORK,
-          payTo: OWNER_LOCK.base,
+          payTo,
           maxTimeoutSeconds: 60,
         }],
         description,
@@ -168,7 +182,7 @@ export function withPaidAgentService(
       }, { status: 503, headers: { "Cache-Control": "no-store" } });
     }
 
-    if (!isSettlementResponse(settlement)) {
+    if (!isSettlementResponse(settlement) || !settlement.payer) {
       return NextResponse.json({
         error: "Payment settlement is not confirmed for the expected Base network",
         code: "X402_SETTLEMENT_UNCONFIRMED",
@@ -195,7 +209,7 @@ export function withPaidAgentService(
         amount: price,
         chain: BASE_NETWORK,
         resource,
-        payTo: OWNER_LOCK.base,
+        payTo,
         asset: BASE_USDC,
         payer: settlement.payer,
       });

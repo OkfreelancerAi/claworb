@@ -1,155 +1,124 @@
-# ClawOrb
+<div align="center">
 
-**Genius Claw × x402 × QUANTORB**
+# ⚡ ClawOrb
 
-Mobile-first multi-agent revenue system with zero-friction x402 micropayments, locked ownership, and trackable real USDC settlements on Base & Solana.
+### The Superfuturistic Agentic Playground
 
-**Ownership permanently locked to [@okfreelancer](https://x.com/okfreelancer) / [OkfreelancerAi](https://github.com/OkfreelancerAi)**
+**Where agents launch, get paid, collaborate, and settle real value — for fun and for keeps.**
 
----
+Genius Claw × x402 × QUANTORB  
+Mobile-first · Multi-agent · Zero-friction USDC · Locked ownership
 
-## Product Brief
+[![X](https://img.shields.io/badge/X-@okfreelancer-1DA1F2?style=for-the-badge&logo=x)](https://x.com/okfreelancer)
+[![Live soon](https://img.shields.io/badge/Status-Scaffolded_→_Launching-a78bfa?style=for-the-badge)](https://github.com/OkfreelancerAi/claworb)
 
-ClawOrb merges three proven directions:
+**Ownership permanently locked to @okfreelancer**
 
-| Source | Contribution |
-|--------|--------------|
-| **Genius Claw** | Mobile dApp experience, launch flows, ownership lock on Base, Circle-style USDC payouts, research pipeline |
-| **x402 Micropay** | HTTP 402 USDC payments (no accounts, no API keys), dual-chain (Base + Solana) |
-| **QUANTORB** | 6-core agent pipeline + sub-agents, public skill board, invite links, programmable 20/30/50 earnings splits |
-
-### Core Value Proposition
-
-Agents and creators can:
-1. Launch or discover opportunities (Claw-style)
-2. Expose payable skills or research via x402
-3. Let a multi-agent system evaluate, decide, and route value
-4. Settle real USDC to locked, trackable wallets with transparent splits
-
-Everything is designed so value movement is **observable, attributable, and locked to the owner**.
+</div>
 
 ---
 
-## Architecture Overview
+## 🌌 What is ClawOrb?
+
+ClawOrb is not another dashboard.  
+It’s a **living agentic arena** where:
+
+- Agents wake up, discover opportunities, and call skills
+- Humans and agents collaborate through invite links
+- Every valuable action can be paid in real USDC via x402 (no accounts, no API keys)
+- Earnings route automatically to locked wallets with transparent splits
+- Everything feels fast, playful, and slightly futuristic
+
+Think of it as a **game-like control center** for the agent economy — with real money rails underneath.
+
+---
+
+## 🚀 The Mix
+
+| Source | Superpower injected into ClawOrb |
+|--------|----------------------------------|
+| **Genius Claw** | Mobile energy, launch flows, ownership lock, Circle-style USDC feel |
+| **x402** | Instant pay-per-call USDC on Base + Solana |
+| **QUANTORB** | 6-agent brain + skill board + invite links + programmable splits |
+
+Result: a platform that is **fun to open**, powerful to run, and serious about value settlement.
+
+---
+
+## 🧠 The Agent Crew
+
+Your on-demand team inside ClawOrb:
+
+| Agent | Vibe | Job |
+|-------|------|-----|
+| **SCOUT** | Curious | Finds new launches & opportunities |
+| **CARTOGRAPHER** | Detective | Maps connections & relationships |
+| **JUDGE** | Sharp | Scores quality and edge |
+| **QUANT** | Cold & precise | Prices risk, cost, and execution |
+| **GUARD** | Protector | Blocks bad risk & concentration |
+| **EXECUTOR** | Closer | Takes (or models) the final action |
+
+Plus high-value sub-agents for payments, treasury, research, and more.  
+They talk. They decide. They can get paid.
+
+---
+
+## 💸 Real Value, Real Tracking
+
+- Every paid skill call uses **x402** → real USDC moves
+- Funds land in **locked owner wallets** (Base + Solana)
+- Transparent splits (configurable 20/30/50 style)
+- Full trackability: payment proof, amount, chain, skill, timestamp, invite source
+- Dashboard shows **only real balances** — no simulated numbers
+
+No play money. No fake dashboards. Just observable settlement.
+
+---
+
+## 🔒 Owner Lock & On-chain Claim
+
+- Critical parameters (wallets, splits, control) are designed to be locked
+- Permanent attribution to **@okfreelancer**
+- Architecture ready for an on-chain ownership attestation / “patent” style claim on Base
+
+You build it. You own it. The system remembers.
+
+---
+
+## 🏗️ Architecture (Clean & Future-proof)
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Frontend (Next.js)                    │
-│  Mobile-first · Launch UI · Skill Board · Dashboard     │
-└─────────────────────┬───────────────────────────────────┘
-                      │
-┌─────────────────────▼───────────────────────────────────┐
-│                 Payment Layer (x402)                     │
-│  HTTP 402 · Base USDC · Solana USDC · Facilitator ready │
-└─────────────────────┬───────────────────────────────────┘
-                      │
-┌─────────────────────▼───────────────────────────────────┐
-│              Agent Pipeline (QUANTORB-style)             │
-│  SCOUT → CARTOGRAPHER → JUDGE → QUANT → GUARD → EXECUTOR│
-│  + high-value sub-agents · Skill Board · Invite links   │
-└─────────────────────┬───────────────────────────────────┘
-                      │
-┌─────────────────────▼───────────────────────────────────┐
-│           Settlement & Tracking Layer                    │
-│  Locked wallets · Programmable splits · SQL / ledger    │
-│  On-chain event indexing · Audit trail                  │
-└─────────────────────────────────────────────────────────┘
+Frontend (fun, mobile-first)
+    ↓
+x402 Payment Layer (instant USDC)
+    ↓
+Agent Pipeline (SCOUT → EXECUTOR)
+    ↓
+Settlement + Tracking (locked wallets + ledger)
 ```
 
-### Locked Wallets (Owner-Controlled)
-
-| Role | Network | Address (placeholder – replace with final) | Share |
-|------|---------|---------------------------------------------|-------|
-| Owner | Base | `0x34AcF08d68D85644bf322B7167151F8422f1BafC` | 20–50% |
-| Owner / Ops | Solana | `CG9DVW1yaBd6BeMjcJAzyTgCaY2nvp7oynW711BQUZoz` | 20–50% |
-| Treasury | Solana | `2jAMeJZH1UeNSgdzdhHgYwAm6286aRqxMCdx52DBw7xo` | Remaining |
-
-All splits are configurable but ownership of the system remains locked to the above controller addresses.
+Deployable on **Vercel**. Extensible with SQL indexing. Ready for real facilitators.
 
 ---
 
-## Trackable Real Transactions
+## 🕹️ Status
 
-- Every paid x402 call produces a verifiable payment proof
-- Settlements land in the locked wallets above
-- Optional SQL / event indexer stores:
-  - payment hash / signature
-  - amount, chain, timestamp
-  - skill or endpoint called
-  - originating agent / invite link
-- Dashboard surfaces live USDC balances and historical settlements (same pattern as Crab Claw Racers)
-
-No simulated balances. Only real, on-chain USDC movements.
+- [x] Superfuturistic vision locked in
+- [x] Full product + architecture docs
+- [x] Owner-lock & tracking model
+- [x] Payment + agent code skeleton
+- [ ] Make the UI actually fun (next)
+- [ ] Live x402 verification
+- [ ] Public skill board experience
+- [ ] Vercel launch
 
 ---
 
-## On-chain Ownership Lock & “Patent” Direction
+## 🎯 Vision One-liner
 
-- **Ownership lock**: Critical configuration (wallet list, split ratios, admin keys) is intended to be immutable or multi-sig controlled after deployment.
-- **Attribution**: All public skill boards and invite links carry permanent creator attribution to @okfreelancer.
-- **Future on-chain claim**: Architecture is prepared for an on-chain registry or attestation (e.g. via a simple ownership NFT or attestation contract on Base) that records the canonical ClawOrb implementation and owner. This is the practical equivalent of an on-chain patent / prior-art claim for the combined system.
+> **ClawOrb — the agentic playground where launching, paying, collaborating, and settling value feels like the future… and actually works.**
 
 ---
 
-## Tech Stack
-
-- **Frontend / API**: Next.js 14+ (App Router), TypeScript
-- **Payments**: x402 (Base + Solana USDC)
-- **Chains**: Base, Solana
-- **Settlement tracking**: On-chain events + optional SQL (Postgres / Supabase or similar)
-- **Deploy**: Vercel (frontend + API routes)
-- **Agent layer**: Modular TypeScript agents (QUANTORB-inspired pipeline)
-
----
-
-## Project Structure (Scaffold)
-
-```
-claworb/
-├── README.md
-├── package.json
-├── src/
-│   ├── app/                  # Next.js App Router
-│   │   ├── api/
-│   │   │   ├── health/
-│   │   │   ├── price/
-│   │   │   └── earn/         # x402 protected example
-│   │   └── page.tsx
-│   ├── lib/
-│   │   ├── config.ts         # wallets, prices, splits
-│   │   ├── x402.ts           # 402 challenge + verification helpers
-│   │   └── agents/           # SCOUT → EXECUTOR skeleton
-│   └── components/
-├── docs/
-│   └── architecture.md
-└── .env.example
-```
-
----
-
-## Quick Start (after clone)
-
-```bash
-npm install
-npm run dev
-```
-
-Deploy to Vercel with one click. Set final wallet addresses in `src/lib/config.ts` before mainnet use.
-
----
-
-## Status
-
-- [x] Repository scaffolded
-- [x] Product brief & architecture documented
-- [x] Owner-lock and tracking model defined
-- [ ] x402 payment skeleton implementation
-- [ ] Agent pipeline skeleton
-- [ ] SQL / event indexer
-- [ ] Vercel production deploy
-- [ ] On-chain ownership attestation (optional next phase)
-
----
-
-**Built by @okfreelancer**  
-ClawOrb — agents that can launch, get paid, and settle value under locked ownership.
+**Built by [@okfreelancer](https://x.com/okfreelancer)**  
+ClawOrb is just getting started. The agents are ready when you are.

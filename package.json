@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "check:launch": "node scripts/check-launch.js"
   },
   "dependencies": {
     "@x402/core": "2.28.0",

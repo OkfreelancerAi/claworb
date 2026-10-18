@@ -41,7 +41,7 @@ const handler = async (request: NextRequest) => {
   const domains = [...new Set(validUrls.map((value) => new URL(value).hostname.toLowerCase()))];
   const missing = [
     ...(validUrls.length === 0 ? ["At least one HTTPS evidence URL"] : []),
-    ...(domains.length < 2 && validUrls.length > 1 ? ["Independent source diversity (only one distinct domain supplied)"] : []),
+    ...(domains.length < 2 ? ["At least two distinct HTTPS source domains for cross-source comparison"] : []),
     ...(typeof input.context !== "string" || input.context.trim().length === 0 ? ["Claim context and date"] : []),
   ];
 

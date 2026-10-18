@@ -6,7 +6,6 @@ export const metadata: Metadata = {
   description:
     "Source-backed research and claim verification for autonomous agents. Inspect evidence, uncertainty, and implementation status.",
   applicationName: "ClawOrb",
-  metadataBase: new URL("https://claworb.vercel.app"),
   openGraph: {
     title: "ClawOrb — Evidence is the edge",
     description:
